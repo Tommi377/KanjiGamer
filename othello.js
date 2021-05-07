@@ -40,7 +40,7 @@ module.exports = class OthelloGame {
     get(x, y) { return this.board[y][x] }
 
     outOfBounds(x, y) {
-        return x < 0 || y < 0 || x >= 8 || y >= 8
+        return x < 0 || y < 0 || x >= this.size || y >= this.size
     }
 
     getCaptures(x,y) {
@@ -75,6 +75,10 @@ module.exports = class OthelloGame {
         if (this.ended) {
             return false
         }
+        
+        if (this.get(x, y) !== this.empty) {
+            return false
+        }
 
         const captures = this.getCaptures(x, y)
         if (!captures.length) {
@@ -100,11 +104,13 @@ module.exports = class OthelloGame {
     // 1 = Illegal placement
     // 2 = Wrong answer
     guess(str, x, y) {
-        const guess = Wanakana.isRomaji(str) ? Wanakana.toKana(str) : str
+        const guess = Wanakana.isRomaji(str) ? 
+            Wanakana.toHiragana(str, { customKanaMapping: { nn: 'ん' }}) : str
         const card = this.kanjiBoard[x][y]
 
-        if (card.answer.includes(guess)) {
+        console.log('String:', str, 'ToKana:', guess)
 
+        if (card.answer.includes(guess)) {
             const placed = this.placePiece(x, y)
             if (placed) {
                 return 0
@@ -112,7 +118,7 @@ module.exports = class OthelloGame {
                 return 1
             }
         } else {
-            this.pass()
+            this.pass(true)
             return 2
         }
     }
@@ -207,7 +213,6 @@ module.exports = class OthelloGame {
                 const question = this.kanjiBoard[i][j].question
                 context.fillStyle = '#ffffff';
                 if (question.length > 2) {
-                    console.log(question)
                     var middle = Math.ceil(question.length / 2);
                     var s1 = question.substr(0, middle);
                     var s2 = question.substr(middle);

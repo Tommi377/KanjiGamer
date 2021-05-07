@@ -11,6 +11,9 @@ const drawGame = async (g) => {
 const config = {
     prefix: 'kg!'
 }
+
+let player1 = null
+let player2 = null
 let game = null
 
 client.on('ready', () => {
@@ -25,8 +28,8 @@ client.on('message', async msg => {
                 const params = command.slice(5)
                 const split = params.split(' ')
 
-                const size = Number(split[0]) || 6
-                const decks = split[1] || '1k+j1k+2k+j2k'
+                const decks = split[0]
+                const size = Number(split[1]) || 6
 
                 game = new OthelloGame(size, decks)
                 msg.reply('starting new game', await drawGame(game))
@@ -55,12 +58,16 @@ client.on('message', async msg => {
                 if (code === 0) {
                     msg.reply('Correct answer', await drawGame(game));
                 } else {
-                    const message = code == 1 ? 'Illegal placement' : 'Wrong answer, turn skipped'
+                    const message = code === 1 ? 'Illegal placement' : 'Wrong answer, turn skipped'
                     msg.reply(message, await drawGame(game))
                 }
 
                 break
             }
+            case 'pass':
+                game.pass()
+                msg.reply('Here', await drawGame(game));
+                break
             case 'shuffle':
                 game.shuffle()
                 msg.reply('Here', await drawGame(game));
@@ -68,9 +75,43 @@ client.on('message', async msg => {
             case 'draw':
                 msg.reply('Here', await drawGame(game));
                 break
+            case 'check': {
+                const params = command.slice(6)
+                const x = params[0].charCodeAt() - 97
+                const y = Number(params[1]) - 1
+
+                msg.reply(JSON.stringify(game.kanjiBoard[x][y]))
+                break
+            }
+            case 'end':
+                let red = 0
+                let blue = 0
+                for (let i = 0; i < game.size; i++) {
+                    for (let j = 0; j < game.size; j++) {
+                        if (game.get(i, j) === 1) { red++ }
+                        if (game.get(i, j) === -1) { blue++ }
+                    }
+                }
+
+                msg.reply(`Red: ${red}, Blue: ${blue}`)
+                break
             default:
                 msg.reply('invalid command')
                 break
+        }
+    }
+
+    if (msg.content.match(/^[a-z][1-9]\s/g)) {
+        const split = msg.content.split(' ')
+        const x = msg.content[0].charCodeAt() - 97
+        const y = Number(msg.content[1]) - 1
+
+        const code = game.guess(split[1], x, y)
+        if (code === 0) {
+            msg.reply('Correct answer', await drawGame(game));
+        } else {
+            const message = code === 1 ? 'Illegal placement' : 'Wrong answer, turn skipped'
+            msg.reply(message, await drawGame(game))
         }
     }
 });
